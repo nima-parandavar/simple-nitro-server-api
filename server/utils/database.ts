@@ -8,7 +8,7 @@ export const tables = { usersTable };
 const client = createClient({ url: process.env.DB_FILE_NAME! });
 
 export const useDrizzle = () => {
-  return drizzle({ client: client, schema: usersTable });
+  return drizzle({ schema: { ...tables }, client });
 };
 
 export type User = typeof tables.usersTable.$inferInsert;

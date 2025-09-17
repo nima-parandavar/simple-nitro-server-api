@@ -3,9 +3,7 @@ import * as z from "zod";
 export const authZod = z.object({
   firstName: z.string().max(60).nullish(),
   lastName: z.string().max(100).nullish(),
-  email: z.string().regex(/[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+/, {
-    error: "Email is not valid",
-  }),
+  email: z.email({ pattern: /[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+/ }),
   password: z.string(),
   role: z
     .enum(["user", "admin"], {

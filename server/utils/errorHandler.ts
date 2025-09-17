@@ -1,4 +1,4 @@
-import { createError } from "h3";
+import { createError, setHeader } from "h3";
 import type { H3Error, H3Event, StatusCode } from "h3";
 import { useLogger } from "./logger";
 
