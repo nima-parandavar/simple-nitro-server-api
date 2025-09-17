@@ -1,0 +1,26 @@
+{
+  "name": "nitro-app",
+  "private": true,
+  "scripts": {
+    "build": "nitro build",
+    "dev": "nitro dev",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "drizzle-kit": "^0.31.4",
+    "h3": "^1.15.4",
+    "nitropack": "^2.12.4",
+    "tsx": "^4.20.5"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "bcrypt": "^6.0.0",
+    "bs-logger": "^0.2.6",
+    "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.5",
+    "zod": "^4.1.8"
+  }
+}
