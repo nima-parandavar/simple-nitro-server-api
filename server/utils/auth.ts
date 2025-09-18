@@ -46,13 +46,13 @@ class SessionAuthentication {
         this.sessionConfig,
         {
           user: {
+            id: id,
             email: data.email,
             firstName: data.firstName,
             lastName: data.lastName,
             role: data.role,
           },
           expireAt: Date.now() + this.sessionMaxAge * 1000,
-          id: id,
         }
       );
       return {

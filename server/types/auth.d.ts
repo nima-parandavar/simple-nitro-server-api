@@ -1,6 +1,7 @@
 export interface Auth {
-  firstName?: string;
-  lastName?: string;
+  id: number;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
   role: "admin" | "user";
 }
