@@ -5,4 +5,7 @@ export default defineNitroConfig({
   compatibilityDate: "latest",
   srcDir: "server",
   imports: false,
+  experimental: {
+    openAPI: true,
+  },
 });

@@ -1,67 +1,90 @@
-import { getHeader, useSession, type H3Event } from "h3";
-import jwt from "jsonwebtoken";
+import {
+  clearSession,
+  getSession,
+  SessionConfig,
+  updateSession,
+  type H3Event,
+} from "h3";
 import type { Auth } from "server/types/auth";
 import { useLogger } from "./logger";
+import { SessionDataType } from "server/types/session";
 
-class BasicAuthentication {
-  private secretKey = process.env.SECRET_KEY!;
+class SessionAuthentication {
   private sessionKey = process.env.SESSION_KEY!;
-  private expire = "1h";
+  private sessionName = "user-session";
+  private sessionMaxAge =
+    60 * 60 * 24 * Number(process.env.SESSION_MAX_AGE ?? 7);
+  private secure = process.env.NODE_ENV === "production";
+  private httpOnly = true;
+  private sameSite = process.env.NODE_ENV === "production" ? "strict" : "lax";
 
-  constructor(expire_time?: string) {
-    if (!this.secretKey) {
-      throw Error("SECRET_KEY must be set");
-    }
-    if (expire_time) {
-      this.expire = expire_time;
-    }
+  private get sessionConfig(): SessionConfig {
+    return {
+      password: this.sessionKey,
+      cookie: {
+        sameSite: this.sameSite,
+        secure: this.secure,
+        maxAge: this.sessionMaxAge,
+        httpOnly: this.httpOnly,
+      },
+      name: this.sessionName,
+    };
   }
 
-  generateToken(userId: number) {
-    return jwt.sign({ id: userId }, this.secretKey, { expiresIn: this.expire });
+  private async isSessionExpired(event: H3Event): Promise<boolean> {
+    const session = await getSession<SessionDataType>(
+      event,
+      this.sessionConfig
+    );
+    return Date.now() > session.data.expireAt;
   }
 
-  verify(token: string) {
-    const decoded = jwt.verify(token, this.secretKey);
-    return decoded && Date.now() < decoded.exp * 1000;
-  }
-
-  async login(event: H3Event, id: number, data: Auth): Promise<string> {
-    const token = this.generateToken(id);
+  async login(event: H3Event, id: number, data: Auth) {
     try {
-      const session = await useSession(event, {
-        password: this.sessionKey,
-        name: "auth",
-        cookie: {
-          secure: true,
-        },
-      });
-      await session.update({
-        info: data,
-      });
-      return token;
+      const session = await updateSession<SessionDataType>(
+        event,
+        this.sessionConfig,
+        {
+          user: {
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            role: data.role,
+          },
+          expireAt: Date.now() + this.sessionMaxAge * 1000,
+          id: id,
+        }
+      );
+      return {
+        success: true,
+        user: session.data.user,
+      };
     } catch (error) {
       useLogger(event, "error", error);
-      throw Error(error);
+      return { success: false, user: null };
     }
   }
 
   async getInfo(event: H3Event): Promise<Auth> {
-    const token = await getHeader(event, "Authorization");
-    console.log(token, "===============");
-    if (token) {
-      const isVerified = this.verify(token);
-      if (isVerified) {
-        const session = await useSession(event, {
-          password: this.sessionKey,
-          cookie: { secure: true },
-        });
-        return session.data.info as Auth;
-      }
-      throw Error("Invalid token");
+    const isSessionExpired = await this.isSessionExpired(event);
+    if (!isSessionExpired) {
+      const session = await getSession<SessionDataType>(
+        event,
+        this.sessionConfig
+      );
+      return session.data.user;
     }
-    throw Error("Token must be set");
+    throw Error("Session expired");
+  }
+
+  async logout(event: H3Event): Promise<{ success: boolean }> {
+    try {
+      await clearSession(event, this.sessionConfig);
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
   }
 }
 
-export const useAuth = new BasicAuthentication();
+export const useAuth = new SessionAuthentication();

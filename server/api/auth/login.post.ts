@@ -4,7 +4,6 @@ import { use4xError } from "../../utils/errorHandler";
 import { useHash } from "../../utils/passwordHandler";
 import { loginZod } from "../../zod/login.zod";
 import { useAuth } from "../../utils/auth";
-import { set2xStatus } from "server/utils/useStatus";
 
 export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, loginZod.safeParseAsync);
@@ -22,12 +21,13 @@ export default defineEventHandler(async (event) => {
           user.password
         );
         if (isPasswordCorrect) {
-          return await useAuth.login(event, user.id, {
+          const response = await useAuth.login(event, user.id, {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
           });
+          return response;
         }
         setHeader(
           event,
